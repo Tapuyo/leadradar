@@ -1,3 +1,7 @@
+export type JourneyStep =
+  | { type: 'send'; templateId: string }
+  | { type: 'wait'; days: number };
+
 export interface Company {
   id: string;
   user_id: string;
@@ -25,9 +29,10 @@ export interface Service {
   max_leads: number;
   max_emails_per_day: number;
   auto_send: boolean;
-  email_strategy: 'single' | 'random' | 'sequence';
+  email_strategy: 'single' | 'random' | 'sequence' | 'journey';
   email_template_id: string | null;
   email_sequence: string[];
+  email_journey: JourneyStep[] | null;
   created_at: string;
   updated_at: string;
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SentEmail, Service } from '@/types';
 
 interface SentEmailsTableProps {
@@ -63,9 +63,8 @@ export default function SentEmailsTable({ selectedService }: SentEmailsTableProp
         </thead>
         <tbody>
           {emails.map(e => (
-            <>
+            <React.Fragment key={e.id}>
               <tr
-                key={e.id}
                 onClick={() => setExpandedId(expandedId === e.id ? null : e.id)}
                 className="border-b border-[#1e2d4a] hover:bg-[#1a4b8c]/10 cursor-pointer transition-colors"
               >
@@ -95,7 +94,7 @@ export default function SentEmailsTable({ selectedService }: SentEmailsTableProp
                   </td>
                 </tr>
               )}
-            </>
+            </React.Fragment>
           ))}
         </tbody>
       </table>

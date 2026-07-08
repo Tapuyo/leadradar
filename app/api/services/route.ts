@@ -38,11 +38,23 @@ export async function POST(req: NextRequest) {
   if (!company) return Response.json({ error: 'Company not found' }, { status: 404 });
 
   const body = await req.json();
-  const { data: service, error } = await supabase
+
+  let { data: service, error } = await supabase
     .from('services')
     .insert({ ...body, company_id: company.id })
     .select()
     .single();
+
+  if (error?.message?.includes('email_journey')) {
+    const { email_journey: _dropped, ...bodyWithout } = body;
+    const fallback = await supabase
+      .from('services')
+      .insert({ ...bodyWithout, company_id: company.id })
+      .select()
+      .single();
+    service = fallback.data;
+    error = fallback.error;
+  }
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
   return Response.json({ service }, { status: 201 });

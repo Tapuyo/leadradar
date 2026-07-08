@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Service } from '@/types';
+import { Service, JourneyStep } from '@/types';
 import KeywordManager from './KeywordManager';
 import StateSelector from './StateSelector';
 import SourceToggles from './SourceToggles';
@@ -32,9 +32,10 @@ const DEFAULT_FORM = {
   max_leads: 100,
   max_emails_per_day: 10,
   auto_send: false,
-  email_strategy: 'single' as 'single' | 'random' | 'sequence',
+  email_strategy: 'single' as 'single' | 'random' | 'sequence' | 'journey',
   email_template_id: null as string | null,
   email_sequence: [] as string[],
+  email_journey: [] as JourneyStep[],
 };
 
 export default function ServiceForm({ service, onClose, onSave, onScanNow, initialTab }: ServiceFormProps) {
@@ -56,6 +57,7 @@ export default function ServiceForm({ service, onClose, onSave, onScanNow, initi
     email_strategy: service?.email_strategy ?? DEFAULT_FORM.email_strategy,
     email_template_id: service?.email_template_id ?? DEFAULT_FORM.email_template_id,
     email_sequence: service?.email_sequence ?? DEFAULT_FORM.email_sequence,
+    email_journey: service?.email_journey ?? DEFAULT_FORM.email_journey,
   });
   const [cityInput, setCityInput] = useState('');
   const [saving, setSaving] = useState(false);
@@ -150,11 +152,13 @@ export default function ServiceForm({ service, onClose, onSave, onScanNow, initi
                   strategy={form.email_strategy}
                   templateId={form.email_template_id}
                   sequence={form.email_sequence}
+                  emailJourney={form.email_journey}
                   onChange={updates => setForm(f => ({
                     ...f,
                     email_strategy: updates.email_strategy,
                     email_template_id: updates.email_template_id,
                     email_sequence: updates.email_sequence,
+                    email_journey: updates.email_journey,
                   }))}
                 />
                 {error && (

@@ -30,12 +30,26 @@ export async function PATCH(
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await req.json();
-  const { data: service, error } = await supabase
+
+  // Attempt update with email_journey; if the column doesn't exist yet fall back without it
+  let { data: service, error } = await supabase
     .from('services')
     .update(body)
     .eq('id', id)
     .select()
     .single();
+
+  if (error?.message?.includes('email_journey')) {
+    const { email_journey: _dropped, ...bodyWithout } = body;
+    const fallback = await supabase
+      .from('services')
+      .update(bodyWithout)
+      .eq('id', id)
+      .select()
+      .single();
+    service = fallback.data;
+    error = fallback.error;
+  }
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
   return Response.json({ service });

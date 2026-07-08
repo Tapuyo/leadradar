@@ -40,7 +40,7 @@ export default function BottomSheet({ isOpen, lead, service, onClose, onStatusCh
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50, height: '42%' }}
+            style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50, height: '65%' }}
             className="bg-[#0f1626] border-t border-[#1e2d4a] rounded-t-2xl flex flex-col"
           >
             <div className="w-10 h-1 bg-[#1e2d4a] rounded-full mx-auto mt-3 mb-2 flex-shrink-0" />

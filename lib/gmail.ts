@@ -13,7 +13,10 @@ export function getAuthUrl() {
   return oauth2Client.generateAuthUrl({
     access_type: 'offline',
     prompt: 'consent',
-    scope: ['https://www.googleapis.com/auth/gmail.send'],
+    scope: [
+      'https://www.googleapis.com/auth/gmail.send',
+      'https://www.googleapis.com/auth/gmail.readonly',
+    ],
   });
 }
 
@@ -99,4 +102,82 @@ ${htmlBody}
   });
 
   return res.data;
+}
+
+export interface GmailMessage {
+  id: string;
+  threadId: string;
+  fromName: string;
+  fromEmail: string;
+  subject: string;
+  date: string;
+  snippet: string;
+  isUnread: boolean;
+  gmailUrl: string;
+}
+
+/**
+ * Fetch inbox messages that came from any of the given email addresses.
+ * Requires gmail.readonly scope — throws if the token lacks it.
+ */
+export async function fetchGmailInboxReplies(
+  refreshToken: string,
+  fromEmails: string[]
+): Promise<GmailMessage[]> {
+  const oauth2Client = createOAuth2Client();
+  oauth2Client.setCredentials({ refresh_token: refreshToken });
+  const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+
+  // Search all mail (not just inbox) so replies in threads / other labels aren't missed.
+  // If we know lead emails, filter by sender; otherwise fall back to recent inbox replies.
+  let query: string;
+  if (fromEmails.length > 0) {
+    const emailPart = fromEmails.slice(0, 40).map(e => `from:${e}`).join(' OR ');
+    query = `(${emailPart}) newer_than:60d`;
+  } else {
+    query = 'in:inbox is:reply newer_than:14d';
+  }
+
+  const listRes = await gmail.users.messages.list({
+    userId: 'me',
+    q: query,
+    maxResults: 50,
+  });
+
+  const messages = listRes.data.messages ?? [];
+  if (messages.length === 0) return [];
+
+  // Fetch metadata for up to 20 messages in parallel
+  const details = await Promise.all(
+    messages.slice(0, 20).map(m =>
+      gmail.users.messages.get({
+        userId: 'me',
+        id: m.id!,
+        format: 'metadata',
+        metadataHeaders: ['From', 'Subject', 'Date'],
+      })
+    )
+  );
+
+  return details.map(d => {
+    const headers = d.data.payload?.headers ?? [];
+    const get = (name: string) =>
+      headers.find(h => h.name?.toLowerCase() === name.toLowerCase())?.value ?? '';
+
+    const fromRaw = get('From');
+    const emailMatch = fromRaw.match(/<(.+?)>/);
+    const nameMatch  = fromRaw.match(/^"?([^"<]+)"?\s*</);
+
+    return {
+      id:        d.data.id!,
+      threadId:  d.data.threadId!,
+      fromName:  nameMatch?.[1]?.trim() ?? fromRaw,
+      fromEmail: emailMatch?.[1] ?? fromRaw,
+      subject:   get('Subject'),
+      date:      get('Date'),
+      snippet:   d.data.snippet ?? '',
+      isUnread:  d.data.labelIds?.includes('UNREAD') ?? false,
+      gmailUrl:  `https://mail.google.com/mail/u/0/#inbox/${d.data.id}`,
+    };
+  });
 }

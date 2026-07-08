@@ -10,9 +10,12 @@ import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import ServiceForm from '@/components/ServiceForm/ServiceForm';
 import ScanLog, { LogEntry } from '@/components/ScanLog';
 import SentEmailsTable from '@/components/SentEmailsTable/SentEmailsTable';
+import ReceivedEmailsTable from '@/components/SentEmailsTable/ReceivedEmailsTable';
 import TemplatesPage from '@/components/TemplatesPage/TemplatesPage';
 import SettingsPage from '@/components/SettingsPage/SettingsPage';
+import ReportsPage from '@/components/ReportsPage/ReportsPage';
 import { createClient } from '@/lib/supabase/client';
+import UniverseBackground from '@/components/UniverseBackground/UniverseBackground';
 
 const MindMapCanvas = dynamic(() => import('@/components/MindMap/MindMapCanvas'), { ssr: false });
 
@@ -21,7 +24,8 @@ export default function DashboardPage() {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-  const [activeTab, setActiveTab] = useState<'home' | 'leads' | 'sent' | 'templates' | 'settings'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'leads' | 'sent' | 'reports' | 'templates' | 'settings'>('home');
+  const [sentInnerTab, setSentInnerTab] = useState<'sent' | 'received'>('sent');
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [scanLogs, setScanLogs] = useState<LogEntry[]>([]);
@@ -189,9 +193,11 @@ export default function DashboardPage() {
   const serviceLeads = selectedService ? leads.filter(l => l.service_id === selectedService.id) : [];
 
   return (
-    <div className="flex flex-col h-screen bg-[#0a0a1a] overflow-hidden">
+    <div className="flex flex-col h-screen overflow-hidden relative">
+      <UniverseBackground />
+
       {/* Header */}
-      <header className="flex items-center justify-between px-5 py-3 border-b border-[#1e2d4a] flex-shrink-0">
+      <header className="flex items-center justify-between px-5 py-3 border-b border-[#1e2d4a]/60 flex-shrink-0 bg-[#0a0a1e]/70 backdrop-blur-md relative z-10">
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-bold font-space-grotesk tracking-tight text-white">
             Lead<span className="text-[#2563eb]">Radar</span>
@@ -239,8 +245,8 @@ export default function DashboardPage() {
       </header>
 
       {/* Tab bar */}
-      <div className="flex-shrink-0 flex items-center gap-1 px-5 border-b border-[#1e2d4a] bg-[#0a0a1a]">
-        {(['home', 'leads', 'sent', 'templates', 'settings'] as const).map(tab => (
+      <div className="flex-shrink-0 flex items-center gap-1 px-5 border-b border-[#1e2d4a]/60 bg-[#0a0a1e]/60 backdrop-blur-md relative z-10">
+        {(['home', 'leads', 'sent', 'reports', 'templates', 'settings'] as const).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -250,7 +256,7 @@ export default function DashboardPage() {
                 : 'text-[#4a5a7a] hover:text-[#8899bb]'
             }`}
           >
-            {tab === 'sent' ? 'Sent Emails' : tab === 'templates' ? 'Templates' : tab === 'settings' ? '⚙ Settings' : tab}
+            {tab === 'sent' ? 'Emails' : tab === 'reports' ? '↗ Reports' : tab === 'templates' ? 'Templates' : tab === 'settings' ? '⚙ Settings' : tab}
             {activeTab === tab && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#2563eb] rounded-t-full" />
             )}
@@ -264,9 +270,9 @@ export default function DashboardPage() {
       </div>
 
       {/* Main layout */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative z-10">
         {/* Left panel — Services (always visible) */}
-        <aside className="w-60 flex-shrink-0 border-r border-[#1e2d4a] bg-[#0f1626] overflow-hidden">
+        <aside className="w-60 flex-shrink-0 border-r border-[#1e2d4a]/60 bg-[#0a0a1e]/70 backdrop-blur-md overflow-hidden">
           <ServicesList
             services={services}
             leads={leads}
@@ -295,7 +301,7 @@ export default function DashboardPage() {
 
               {/* Scan log panel */}
               {showLogs && scanLogs.length > 0 && (
-                <div className="h-48 border-t border-[#1e2d4a] bg-[#0a0a1a]/95 flex-shrink-0">
+                <div className="h-48 border-t border-[#1e2d4a]/60 bg-[#0a0a1e]/80 backdrop-blur-md flex-shrink-0">
                   <div className="flex items-center justify-between px-3 py-1.5 border-b border-[#1e2d4a]">
                     <div className="flex items-center gap-2">
                       {isScanning && <div className="w-1.5 h-1.5 rounded-full bg-[#22c55e] animate-pulse" />}
@@ -316,7 +322,7 @@ export default function DashboardPage() {
             </main>
 
             {/* Right panel — Leads sidebar */}
-            <aside className="w-80 flex-shrink-0 border-l border-[#1e2d4a] bg-[#0f1626] overflow-hidden">
+            <aside className="w-80 flex-shrink-0 border-l border-[#1e2d4a]/60 bg-[#0a0a1e]/70 backdrop-blur-md overflow-hidden">
               <LeadsList
                 leads={leads}
                 selectedService={selectedService}
@@ -328,41 +334,73 @@ export default function DashboardPage() {
           </>
         ) : activeTab === 'leads' ? (
           /* Leads tab — full-width grid */
-          <LeadsView
-            leads={serviceLeads}
-            selectedService={selectedService}
-            isScanning={isScanning}
-            onLeadSelect={handleLeadSelect}
-          />
+          <div className="flex-1 overflow-hidden bg-[#0a0a1e]/60 backdrop-blur-md">
+            <LeadsView
+              leads={serviceLeads}
+              selectedService={selectedService}
+              isScanning={isScanning}
+              onLeadSelect={handleLeadSelect}
+            />
+          </div>
         ) : activeTab === 'sent' ? (
-          /* Sent Emails tab */
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="px-5 py-3 border-b border-[#1e2d4a] flex-shrink-0">
-              <h2 className="text-sm font-semibold text-[#8899bb] uppercase tracking-wider">
-                Sent Emails
-                {selectedService && (
-                  <span className="ml-2 font-normal normal-case text-[#4a5a7a]">— {selectedService.name}</span>
-                )}
-              </h2>
+          /* Sent / Received Emails tab */
+          <div className="flex-1 flex flex-col overflow-hidden bg-[#0a0a1e]/60 backdrop-blur-md">
+            <div className="px-5 py-3 border-b border-[#1e2d4a]/60 flex-shrink-0 flex items-center gap-4">
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setSentInnerTab('sent')}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                    sentInnerTab === 'sent'
+                      ? 'bg-[#1a4b8c] text-white'
+                      : 'text-[#8899bb] hover:text-[#e8edf5]'
+                  }`}
+                >
+                  Sent
+                </button>
+                <button
+                  onClick={() => setSentInnerTab('received')}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                    sentInnerTab === 'received'
+                      ? 'bg-[#1a4b8c] text-white'
+                      : 'text-[#8899bb] hover:text-[#e8edf5]'
+                  }`}
+                >
+                  Received
+                </button>
+              </div>
+              {selectedService && (
+                <span className="text-xs text-[#4a5a7a]">— {selectedService.name}</span>
+              )}
             </div>
-            <SentEmailsTable selectedService={selectedService} />
+            {sentInnerTab === 'sent' ? (
+              <SentEmailsTable selectedService={selectedService} />
+            ) : (
+              <ReceivedEmailsTable selectedService={selectedService} />
+            )}
+          </div>
+        ) : activeTab === 'reports' ? (
+          /* Reports tab */
+          <div className="flex-1 flex overflow-hidden bg-[#0a0a1e]/60 backdrop-blur-md">
+            <ReportsPage services={services} selectedService={selectedService} />
           </div>
         ) : activeTab === 'templates' ? (
           /* Templates tab */
-          <TemplatesPage services={services} selectedService={selectedService} />
+          <div className="flex-1 flex overflow-hidden bg-[#0a0a1e]/60 backdrop-blur-md">
+            <TemplatesPage services={services} selectedService={selectedService} />
+          </div>
         ) : (
           /* Settings tab */
-          <SettingsPage
-            company={company ?? { id: '', user_id: '', name: '', map_provider: 'google', created_at: '', updated_at: '' }}
-            services={services}
-            onCompanySave={updated => setCompany(updated)}
-            onEditService={(s, tab) => {
-              setEditingService(s);
-              setServiceFormInitialTab(tab ?? 'settings');
-              setShowServiceForm(true);
-            }}
-            onAddService={() => { setEditingService(null); setShowServiceForm(true); }}
-          />
+          <div className="flex-1 flex overflow-hidden bg-[#0a0a1e]/60 backdrop-blur-md">
+            <SettingsPage
+              company={company ?? { id: '', user_id: '', name: '', map_provider: 'google', created_at: '', updated_at: '' }}
+              selectedService={selectedService}
+              onCompanySave={updated => setCompany(updated)}
+              onServiceSaved={service => {
+                setServices(prev => prev.map(s => s.id === service.id ? service : s));
+                if (selectedService?.id === service.id) setSelectedService(service);
+              }}
+            />
+          </div>
         )}
       </div>
 

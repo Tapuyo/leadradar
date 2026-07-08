@@ -35,7 +35,7 @@ export default function LeadDetail({ lead, service, onClose, onStatusChange, onE
   const scoreColor = SCORE_COLOR(lead.score);
 
   return (
-    <div className="h-full flex flex-col px-4 pb-4 overflow-y-auto">
+    <div className="h-full flex flex-col px-8 pb-6 overflow-y-auto">
       {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-start gap-3 flex-1 min-w-0">
